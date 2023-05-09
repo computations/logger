@@ -9,6 +9,8 @@
 #include <variant>
 #include <vector>
 
+namespace logger {
+
 typedef std::chrono::high_resolution_clock::time_point logger_time_point;
 
 const logger_time_point CLOCK_START = std::chrono::high_resolution_clock::now();
@@ -106,13 +108,13 @@ log_state_list_t &get_log_states();
 #define print_clock(stream)                                                    \
   do {                                                                         \
     std::chrono::duration<double> diff =                                       \
-        std::chrono::high_resolution_clock::now() - CLOCK_START;               \
+        std::chrono::high_resolution_clock::now() - logger::CLOCK_START;       \
     fprintf(stream, "[%6.2f] ", diff.count());                                 \
   } while (0)
 
 #define DEBUG_PRINT_WITH_LEVEL(level, fmt, ...)                                \
   do {                                                                         \
-    for (auto &s : get_log_states()) {                                         \
+    for (auto &s : logger::get_log_states()) {                                 \
       if (s.print_ok(level)) {                                                 \
         print_clock(s.get_stream());                                           \
         fprintf(s.get_stream(), fmt "\n", __VA_ARGS__);                        \
@@ -121,41 +123,42 @@ log_state_list_t &get_log_states();
   } while (0)
 
 #define LOG_DEBUG(fmt, ...)                                                    \
-  DEBUG_PRINT_WITH_LEVEL(log_level::debug, fmt, __VA_ARGS__);
+  DEBUG_PRINT_WITH_LEVEL(logger::log_level::debug, fmt, __VA_ARGS__);
 
 #define LOG_INFO(fmt, ...)                                                     \
-  DEBUG_PRINT_WITH_LEVEL(log_level::info, fmt, __VA_ARGS__);
+  DEBUG_PRINT_WITH_LEVEL(logger::log_level::info, fmt, __VA_ARGS__);
 
 #define LOG_PROGRESS(fmt, ...)                                                 \
-  DEBUG_PRINT_WITH_LEVEL(log_level::progress, fmt, __VA_ARGS__);
+  DEBUG_PRINT_WITH_LEVEL(logger::log_level::progress, fmt, __VA_ARGS__);
 
 #define LOG_IMPORTANT(fmt, ...)                                                \
-  DEBUG_PRINT_WITH_LEVEL(log_level::important, fmt, __VA_ARGS__);
+  DEBUG_PRINT_WITH_LEVEL(logger::log_level::important, fmt, __VA_ARGS__);
 
 #define LOG_WARNING(fmt, ...)                                                  \
-  DEBUG_PRINT_WITH_LEVEL(log_level::warning, fmt, __VA_ARGS__);
+  DEBUG_PRINT_WITH_LEVEL(logger::log_level::warning, fmt, __VA_ARGS__);
 
 #define LOG_ERROR(fmt, ...)                                                    \
-  DEBUG_PRINT_WITH_LEVEL(log_level::error, fmt, __VA_ARGS__);
+  DEBUG_PRINT_WITH_LEVEL(logger::log_level::error, fmt, __VA_ARGS__);
 
 #define MESSAGE_WITH_LEVEL(level, str)                                         \
   DEBUG_PRINT_WITH_LEVEL(level, "%s", (str));
 
 #define MESSAGE_DEBUG(str)                                                     \
-  DEBUG_PRINT_WITH_LEVEL(log_level::debug, "%s", (str));
+  DEBUG_PRINT_WITH_LEVEL(logger::log_level::debug, "%s", (str));
 
 #define MESSAGE_INFO(str) DEBUG_PRINT_WITH_LEVEL(log_level::info, "%s", (str));
 
 #define MESSAGE_PROGRESS(str)                                                  \
-  DEBUG_PRINT_WITH_LEVEL(log_level::progress, "%s", (str));
+  DEBUG_PRINT_WITH_LEVEL(logger::log_level::progress, "%s", (str));
 
 #define MESSAGE_IMPORTANT(str)                                                 \
-  DEBUG_PRINT_WITH_LEVEL(log_level::important, "%s", (str));
+  DEBUG_PRINT_WITH_LEVEL(logger::log_level::important, "%s", (str));
 
 #define MESSAGE_WARNING(str)                                                   \
-  DEBUG_PRINT_WITH_LEVEL(log_level::warning, "%s", (str));
+  DEBUG_PRINT_WITH_LEVEL(logger::log_level::warning, "%s", (str));
 
 #define MESSAGE_ERROR(str)                                                     \
-  DEBUG_PRINT_WITH_LEVEL(log_level::error, "%s", (str));
+  DEBUG_PRINT_WITH_LEVEL(logger::log_level::error, "%s", (str));
+} // namespace logger
 
 #endif
