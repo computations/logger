@@ -149,7 +149,8 @@ log_state_list_t &get_log_states();
 #define MESSAGE_DEBUG(str)                                                     \
   DEBUG_PRINT_WITH_LEVEL(logger::log_level::debug, "%s", (str));
 
-#define MESSAGE_INFO(str) DEBUG_PRINT_WITH_LEVEL(log_level::info, "%s", (str));
+#define MESSAGE_INFO(str)                                                      \
+  DEBUG_PRINT_WITH_LEVEL(logger::log_level::info, "%s", (str));
 
 #define MESSAGE_PROGRESS(str)                                                  \
   DEBUG_PRINT_WITH_LEVEL(logger::log_level::progress, "%s", (str));
