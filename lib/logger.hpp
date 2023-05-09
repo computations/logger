@@ -15,12 +15,12 @@ typedef std::chrono::high_resolution_clock::time_point logger_time_point;
 
 const logger_time_point CLOCK_START = std::chrono::high_resolution_clock::now();
 
-enum class log_level { debug = 1, info, progress, important, warning, error };
+enum class log_level { debug, info, progress, important, warning, error };
 
-typedef std::bitset<static_cast<size_t>(log_level::error)> log_level_set;
+typedef std::bitset<static_cast<size_t>(log_level::error) + 1> log_level_set;
 
 constexpr inline log_level_set convert_log_level_to_bitset(log_level ll) {
-  return static_cast<size_t>(ll);
+  return 1lu << static_cast<size_t>(ll);
 }
 
 log_level_set operator|(log_level l1, log_level l2);
