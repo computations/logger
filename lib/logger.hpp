@@ -25,6 +25,9 @@ constexpr inline log_level_set convert_log_level_to_bitset(log_level ll) {
 
 log_level_set operator|(log_level l1, log_level l2);
 
+log_level_set operator|(log_level_set l1, log_level l2);
+log_level_set operator|(log_level l1, log_level_set l2);
+
 class log_level_state_t {
 public:
   log_level_state_t() = default;
