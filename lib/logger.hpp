@@ -28,6 +28,11 @@ log_level_set operator|(log_level l1, log_level l2);
 log_level_set operator|(log_level_set l1, log_level l2);
 log_level_set operator|(log_level l1, log_level_set l2);
 
+log_level_set operator&(log_level l1, log_level l2);
+
+log_level_set operator&(log_level_set l1, log_level l2);
+log_level_set operator&(log_level l1, log_level_set l2);
+
 class log_level_state_t {
 public:
   log_level_state_t() = default;
@@ -45,6 +50,12 @@ public:
   }
 
   FILE *get_stream() const { return _stream; }
+
+  bool operator&&(const log_level_set &ll) const {
+    return (_log_levels & ll).any();
+  }
+
+  bool operator&&(log_level ll) const { return (_log_levels & ll).any(); }
 
 private:
   FILE *_stream = nullptr;
@@ -120,6 +131,9 @@ log_state_list_t &get_log_states();
     for (auto &s : logger::get_log_states()) {                                 \
       if (s.print_ok(level)) {                                                 \
         print_clock(s.get_stream());                                           \
+        if (s && logger::log_level::debug) {                                   \
+          fprintf(s.get_stream(), "[%s:%d] ", __func__, __LINE__);             \
+        }                                                                      \
         fprintf(s.get_stream(), fmt "\n", __VA_ARGS__);                        \
       }                                                                        \
     }                                                                          \
