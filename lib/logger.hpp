@@ -123,7 +123,7 @@ log_state_list_t &get_log_states();
   do {                                                                         \
     std::chrono::duration<double> diff =                                       \
         std::chrono::high_resolution_clock::now() - logger::CLOCK_START;       \
-    fprintf(stream, "[%6.2f] ", diff.count());                                 \
+    fprintf(stream, "[%6.2fs] ", diff.count());                                \
   } while (0)
 
 #define DEBUG_PRINT_WITH_LEVEL(level, fmt, ...)                                \
