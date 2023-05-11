@@ -15,23 +15,32 @@ typedef std::chrono::high_resolution_clock::time_point logger_time_point;
 
 const logger_time_point CLOCK_START = std::chrono::high_resolution_clock::now();
 
-enum class log_level { debug, info, progress, important, warning, error };
+constexpr size_t LOG_LEVEL_COUNT = 6;
 
-typedef std::bitset<static_cast<size_t>(log_level::error) + 1> log_level_set;
+typedef std::bitset<LOG_LEVEL_COUNT> log_level_set;
 
-constexpr inline log_level_set convert_log_level_to_bitset(log_level ll) {
-  return 1lu << static_cast<size_t>(ll);
-}
+class log_level {
+public:
+  operator log_level_set() const { return 1lu << static_cast<size_t>(_ll); }
 
-log_level_set operator|(log_level l1, log_level l2);
+  enum log_level_value { debug, info, progress, important, warning, error };
 
-log_level_set operator|(log_level_set l1, log_level l2);
-log_level_set operator|(log_level l1, log_level_set l2);
+  log_level(log_level_value ll) : _ll{ll} {}
 
-log_level_set operator&(log_level l1, log_level l2);
+  log_level_set operator|(log_level_set l2) const {
+    return log_level_set(_ll) | l2;
+  }
 
-log_level_set operator&(log_level_set l1, log_level l2);
-log_level_set operator&(log_level l1, log_level_set l2);
+  log_level_set operator&(log_level_set l2) const {
+    return log_level_set(_ll) | l2;
+  }
+
+private:
+  log_level_value _ll;
+};
+
+static_assert(LOG_LEVEL_COUNT == log_level::error + 1,
+              "Log level const doesn't match the actual log levels");
 
 class log_level_state_t {
 public:
@@ -39,23 +48,17 @@ public:
 
   void set_stream(FILE *s) { _stream = s; }
 
-  void add_level(log_level ll) {
-    _log_levels |= convert_log_level_to_bitset(ll);
-  }
+  void add_level(log_level ll) { _log_levels |= ll; }
 
   void add_level(log_level_set ls) { _log_levels |= ls; }
 
-  bool print_ok(log_level ll) const {
-    return (convert_log_level_to_bitset(ll) & _log_levels).any();
-  }
+  bool print_ok(log_level ll) const { return (ll & _log_levels).any(); }
 
   FILE *get_stream() const { return _stream; }
 
   bool operator&&(const log_level_set &ll) const {
     return (_log_levels & ll).any();
   }
-
-  bool operator&&(log_level ll) const { return (_log_levels & ll).any(); }
 
 private:
   FILE *_stream = nullptr;
@@ -68,17 +71,15 @@ public:
   log_state_list_t() = default;
 
   log_state_list_t(const log_state_list_t &) = delete;
-  log_state_list_t(log_state_list_t &&)      = delete;
+  log_state_list_t(log_state_list_t &&) = delete;
 
   log_state_list_t &operator=(const log_state_list_t &) = delete;
-  log_state_list_t &operator=(log_state_list_t &&)      = delete;
+  log_state_list_t &operator=(log_state_list_t &&) = delete;
 
   ~log_state_list_t() {
-    for (auto f : _files) { fclose(f); }
-  }
-
-  void add_stream(FILE *s, log_level ll) {
-    add_stream(s, convert_log_level_to_bitset(ll));
+    for (auto f : _files) {
+      fclose(f);
+    }
   }
 
   void add_stream(FILE *s, log_level_set ll) {
@@ -88,12 +89,7 @@ public:
   }
 
   void add_file_stream(const std::filesystem::path &log_filename,
-                       log_level                    ll) {
-    add_file_stream(log_filename, convert_log_level_to_bitset(ll));
-  }
-
-  void add_file_stream(const std::filesystem::path &log_filename,
-                       log_level_set                ll) {
+                       log_level_set ll) {
     FILE *s = fopen(log_filename.c_str(), "w");
     _files.push_back(s);
     _streams.emplace_back();
@@ -101,12 +97,10 @@ public:
     _streams.back().add_level(ll);
   }
 
-  void add_level_to_all_streams(log_level ll) {
-    add_level_to_all_streams(convert_log_level_to_bitset(ll));
-  }
-
   void add_level_to_all_streams(log_level_set ll) {
-    for (auto &s : _streams) { s.add_level(ll); }
+    for (auto &s : _streams) {
+      s.add_level(ll);
+    }
   }
 
   auto begin() const { return _streams.begin(); }
@@ -114,7 +108,7 @@ public:
 
 private:
   std::vector<log_level_state_t> _streams;
-  std::vector<FILE *>            _files;
+  std::vector<FILE *> _files;
 };
 
 log_state_list_t &get_log_states();
