@@ -3,6 +3,7 @@
 
 #include <bitset>
 #include <chrono>
+#include <cstddef>
 #include <filesystem>
 #include <memory>
 #include <stdio.h>
@@ -12,18 +13,17 @@
 namespace logger {
 
 typedef std::chrono::high_resolution_clock::time_point logger_time_point;
-
 const logger_time_point CLOCK_START = std::chrono::high_resolution_clock::now();
 
 constexpr size_t LOG_LEVEL_COUNT = 6;
-
 typedef std::bitset<LOG_LEVEL_COUNT> log_level_set;
 
 class log_level {
 public:
-  operator log_level_set() const { return 1lu << static_cast<size_t>(_ll); }
-
   enum log_level_value { debug, info, progress, important, warning, error };
+  operator log_level_set() const {
+    return convert_log_level_value_to_bitset(_ll);
+  }
 
   log_level(log_level_value ll) : _ll{ll} {}
 
@@ -36,6 +36,11 @@ public:
   }
 
 private:
+  constexpr static log_level_set
+  convert_log_level_value_to_bitset(log_level_value ll) {
+    return 1lu << static_cast<size_t>(ll);
+  }
+
   log_level_value _ll;
 };
 
