@@ -32,7 +32,7 @@ public:
   }
 
   log_level_set operator&(log_level_set l2) const {
-    return log_level_set(_ll) | l2;
+    return log_level_set(_ll) & l2;
   }
 
 private:
