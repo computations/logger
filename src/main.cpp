@@ -8,5 +8,6 @@ int main() {
                                                logger::log_level::debug);
   logger::get_log_states().add_level_to_all_streams(
       logger::log_level::important);
-  MESSAGE_IMPORTANT("test");
+  MESSAGE_IMPORTANT("info test");
+  MESSAGE_DEBUG("debug test");
 }

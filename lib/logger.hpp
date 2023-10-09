@@ -20,19 +20,25 @@ typedef std::bitset<LOG_LEVEL_COUNT> log_level_set;
 
 class log_level {
 public:
-  enum log_level_value { debug, info, progress, important, warning, error };
-  operator log_level_set() const {
-    return convert_log_level_value_to_bitset(_ll);
-  }
+  enum log_level_value {
+    debug = 1ul << 0,
+    info = 1ul << 1,
+    progress = 1ul << 2,
+    important = 1ul << 3,
+    warning = 1ul << 4,
+    error = 1ul << 5
+  };
+
+  operator log_level_set() const { return std::bitset<LOG_LEVEL_COUNT>(_ll); }
 
   log_level(log_level_value ll) : _ll{ll} {}
 
   log_level_set operator|(log_level_set l2) const {
-    return log_level_set(_ll) | l2;
+    return l2 | log_level_set(_ll);
   }
 
   log_level_set operator&(log_level_set l2) const {
-    return log_level_set(_ll) & l2;
+    return l2 & log_level_set(_ll);
   }
 
 private:
@@ -44,7 +50,7 @@ private:
   log_level_value _ll;
 };
 
-static_assert(LOG_LEVEL_COUNT == log_level::error + 1,
+static_assert((1ul << (LOG_LEVEL_COUNT - 1)) == log_level::error,
               "Log level const doesn't match the actual log levels");
 
 class log_level_state_t {
@@ -53,7 +59,7 @@ public:
 
   void set_stream(FILE *s) { _stream = s; }
 
-  void add_level(log_level ll) { _log_levels |= ll; }
+  void add_level(log_level ll) { _log_levels |= log_level_set(ll); }
 
   void add_level(log_level_set ls) { _log_levels |= ls; }
 
