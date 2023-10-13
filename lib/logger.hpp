@@ -15,18 +15,18 @@ namespace logger {
 typedef std::chrono::high_resolution_clock::time_point logger_time_point;
 const logger_time_point CLOCK_START = std::chrono::high_resolution_clock::now();
 
-constexpr size_t LOG_LEVEL_COUNT = 6;
+constexpr size_t                     LOG_LEVEL_COUNT = 6;
 typedef std::bitset<LOG_LEVEL_COUNT> log_level_set;
 
 class log_level {
 public:
   enum log_level_value {
-    debug = 1ul << 0,
-    info = 1ul << 1,
-    progress = 1ul << 2,
+    debug     = 1ul << 0,
+    info      = 1ul << 1,
+    progress  = 1ul << 2,
     important = 1ul << 3,
-    warning = 1ul << 4,
-    error = 1ul << 5
+    warning   = 1ul << 4,
+    error     = 1ul << 5
   };
 
   operator log_level_set() const { return std::bitset<LOG_LEVEL_COUNT>(_ll); }
@@ -82,15 +82,13 @@ public:
   log_state_list_t() = default;
 
   log_state_list_t(const log_state_list_t &) = delete;
-  log_state_list_t(log_state_list_t &&) = delete;
+  log_state_list_t(log_state_list_t &&)      = delete;
 
   log_state_list_t &operator=(const log_state_list_t &) = delete;
-  log_state_list_t &operator=(log_state_list_t &&) = delete;
+  log_state_list_t &operator=(log_state_list_t &&)      = delete;
 
   ~log_state_list_t() {
-    for (auto f : _files) {
-      fclose(f);
-    }
+    for (auto f : _files) { fclose(f); }
   }
 
   void add_stream(FILE *s, log_level_set ll) {
@@ -100,7 +98,7 @@ public:
   }
 
   void add_file_stream(const std::filesystem::path &log_filename,
-                       log_level_set ll) {
+                       log_level_set                ll) {
     FILE *s = fopen(log_filename.c_str(), "w");
     _files.push_back(s);
     _streams.emplace_back();
@@ -109,9 +107,7 @@ public:
   }
 
   void add_level_to_all_streams(log_level_set ll) {
-    for (auto &s : _streams) {
-      s.add_level(ll);
-    }
+    for (auto &s : _streams) { s.add_level(ll); }
   }
 
   auto begin() const { return _streams.begin(); }
@@ -119,15 +115,23 @@ public:
 
 private:
   std::vector<log_level_state_t> _streams;
-  std::vector<FILE *> _files;
+  std::vector<FILE *>            _files;
 };
 
 log_state_list_t &get_log_states();
 
+#define ANSI_COLOR_RED     "\x1b[31m"
+#define ANSI_COLOR_GREEN   "\x1b[32m"
+#define ANSI_COLOR_YELLOW  "\x1b[33m"
+#define ANSI_COLOR_BLUE    "\x1b[34m"
+#define ANSI_COLOR_MAGENTA "\x1b[35m"
+#define ANSI_COLOR_CYAN    "\x1b[36m"
+#define ANSI_COLOR_RESET   "\x1b[0m"
+
 #define print_clock(stream)                                                    \
   do {                                                                         \
-    std::chrono::duration<double> diff =                                       \
-        std::chrono::high_resolution_clock::now() - logger::CLOCK_START;       \
+    std::chrono::duration<double> diff                                         \
+        = std::chrono::high_resolution_clock::now() - logger::CLOCK_START;     \
     fprintf(stream, "[%6.2fs] ", diff.count());                                \
   } while (0)
 
@@ -138,6 +142,12 @@ log_state_list_t &get_log_states();
         print_clock(s.get_stream());                                           \
         if (s && logger::log_level::debug) {                                   \
           fprintf(s.get_stream(), "[%s:%d] ", __func__, __LINE__);             \
+        }                                                                      \
+        if (level == logger::log_level::error) {                               \
+          fprintf(s.get_stream(), ANSI_COLOR_RED "[ERR] " ANSI_COLOR_RESET);   \
+        } else if (level == logger::log_level::warning) {                      \
+          fprintf(s.get_stream(),                                              \
+                  ANSI_COLOR_YELLOW "[WARN] " ANSI_COLOR_RESET);               \
         }                                                                      \
         fprintf(s.get_stream(), fmt "\n", __VA_ARGS__);                        \
       }                                                                        \
