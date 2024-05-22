@@ -5,9 +5,7 @@
 #include <chrono>
 #include <cstddef>
 #include <filesystem>
-#include <memory>
 #include <stdio.h>
-#include <variant>
 #include <vector>
 
 namespace logger {
@@ -49,6 +47,13 @@ private:
 
   log_level_value _ll;
 };
+
+#define DEBUG logger::log_level::debug
+#define INFO logger::log_level::info
+#define PROGRESS logger::log_level::progress
+#define IMPORTANT logger::log_level::important
+#define WARNING logger::log_level::warning
+#define ERROR logger::log_level::error
 
 static_assert((1ul << (LOG_LEVEL_COUNT - 1)) == log_level::error,
               "Log level const doesn't match the actual log levels");
@@ -135,7 +140,7 @@ log_state_list_t &get_log_states();
     fprintf(stream, "[%6.2fs] ", diff.count());                                \
   } while (0)
 
-#define DEBUG_PRINT_WITH_LEVEL(level, fmt, ...)                                \
+#define LOG(level, fmt, ...)                                                   \
   do {                                                                         \
     for (auto &s : logger::get_log_states()) {                                 \
       if (s.print_ok(level)) {                                                 \
@@ -154,44 +159,33 @@ log_state_list_t &get_log_states();
     }                                                                          \
   } while (0)
 
-#define LOG_DEBUG(fmt, ...)                                                    \
-  DEBUG_PRINT_WITH_LEVEL(logger::log_level::debug, fmt, __VA_ARGS__);
+#define LOG_DEBUG(fmt, ...) LOG(logger::log_level::debug, fmt, __VA_ARGS__);
 
-#define LOG_INFO(fmt, ...)                                                     \
-  DEBUG_PRINT_WITH_LEVEL(logger::log_level::info, fmt, __VA_ARGS__);
+#define LOG_INFO(fmt, ...) LOG(logger::log_level::info, fmt, __VA_ARGS__);
 
 #define LOG_PROGRESS(fmt, ...)                                                 \
-  DEBUG_PRINT_WITH_LEVEL(logger::log_level::progress, fmt, __VA_ARGS__);
+  LOG(logger::log_level::progress, fmt, __VA_ARGS__);
 
 #define LOG_IMPORTANT(fmt, ...)                                                \
-  DEBUG_PRINT_WITH_LEVEL(logger::log_level::important, fmt, __VA_ARGS__);
+  LOG(logger::log_level::important, fmt, __VA_ARGS__);
 
-#define LOG_WARNING(fmt, ...)                                                  \
-  DEBUG_PRINT_WITH_LEVEL(logger::log_level::warning, fmt, __VA_ARGS__);
+#define LOG_WARNING(fmt, ...) LOG(logger::log_level::warning, fmt, __VA_ARGS__);
 
-#define LOG_ERROR(fmt, ...)                                                    \
-  DEBUG_PRINT_WITH_LEVEL(logger::log_level::error, fmt, __VA_ARGS__);
+#define LOG_ERROR(fmt, ...) LOG(logger::log_level::error, fmt, __VA_ARGS__);
 
-#define MESSAGE_WITH_LEVEL(level, str)                                         \
-  DEBUG_PRINT_WITH_LEVEL(level, "%s", (str));
+#define MESSAGE(level, str) LOG(level, "%s", (str));
 
-#define MESSAGE_DEBUG(str)                                                     \
-  DEBUG_PRINT_WITH_LEVEL(logger::log_level::debug, "%s", (str));
+#define MESSAGE_DEBUG(str) LOG(logger::log_level::debug, "%s", (str));
 
-#define MESSAGE_INFO(str)                                                      \
-  DEBUG_PRINT_WITH_LEVEL(logger::log_level::info, "%s", (str));
+#define MESSAGE_INFO(str) LOG(logger::log_level::info, "%s", (str));
 
-#define MESSAGE_PROGRESS(str)                                                  \
-  DEBUG_PRINT_WITH_LEVEL(logger::log_level::progress, "%s", (str));
+#define MESSAGE_PROGRESS(str) LOG(logger::log_level::progress, "%s", (str));
 
-#define MESSAGE_IMPORTANT(str)                                                 \
-  DEBUG_PRINT_WITH_LEVEL(logger::log_level::important, "%s", (str));
+#define MESSAGE_IMPORTANT(str) LOG(logger::log_level::important, "%s", (str));
 
-#define MESSAGE_WARNING(str)                                                   \
-  DEBUG_PRINT_WITH_LEVEL(logger::log_level::warning, "%s", (str));
+#define MESSAGE_WARNING(str) LOG(logger::log_level::warning, "%s", (str));
 
-#define MESSAGE_ERROR(str)                                                     \
-  DEBUG_PRINT_WITH_LEVEL(logger::log_level::error, "%s", (str));
+#define MESSAGE_ERROR(str) LOG(logger::log_level::error, "%s", (str));
 } // namespace logger
 
 #endif

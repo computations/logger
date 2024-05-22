@@ -15,4 +15,6 @@ int main() {
   MESSAGE_DEBUG("debug test");
   MESSAGE_ERROR("error test");
   MESSAGE_WARNING("warning test");
+  MESSAGE(logger::log_level::error, "test");
+  MESSAGE(WARNING, "test");
 }
