@@ -3,8 +3,8 @@
 
 #include <bitset>
 #include <chrono>
-#include <cstddef>
 #include <filesystem>
+#include <format>
 #include <stdio.h>
 #include <vector>
 
@@ -48,19 +48,30 @@ private:
   log_level_value _ll;
 };
 
-#define DEBUG logger::log_level::debug
-#define INFO logger::log_level::info
-#define PROGRESS logger::log_level::progress
+#define DEBUG     logger::log_level::debug
+#define INFO      logger::log_level::info
+#define PROGRESS  logger::log_level::progress
 #define IMPORTANT logger::log_level::important
-#define WARNING logger::log_level::warning
-#define ERROR logger::log_level::error
+#define WARNING   logger::log_level::warning
+#define ERROR     logger::log_level::error
 
 static_assert((1ul << (LOG_LEVEL_COUNT - 1)) == log_level::error,
               "Log level const doesn't match the actual log levels");
 
 class log_level_state_t {
 public:
-  log_level_state_t() = default;
+  log_level_state_t() : _stream{nullptr}, _log_levels{} {}
+
+  log_level_state_t(const log_level_state_t &) = delete;
+  log_level_state_t(log_level_state_t &&other) {
+    _stream       = other._stream;
+    _log_levels   = std::move(other._log_levels);
+    other._stream = nullptr;
+  }
+
+  ~log_level_state_t() {
+    if (_stream) { fclose(_stream); }
+  }
 
   void set_stream(FILE *s) { _stream = s; }
 
@@ -92,10 +103,6 @@ public:
   log_state_list_t &operator=(const log_state_list_t &) = delete;
   log_state_list_t &operator=(log_state_list_t &&)      = delete;
 
-  ~log_state_list_t() {
-    for (auto f : _files) { fclose(f); }
-  }
-
   void add_stream(FILE *s, log_level_set ll) {
     _streams.emplace_back();
     _streams.back().set_stream(s);
@@ -105,7 +112,6 @@ public:
   void add_file_stream(const std::filesystem::path &log_filename,
                        log_level_set                ll) {
     FILE *s = fopen(log_filename.c_str(), "w");
-    _files.push_back(s);
     _streams.emplace_back();
     _streams.back().set_stream(s);
     _streams.back().add_level(ll);
@@ -120,7 +126,6 @@ public:
 
 private:
   std::vector<log_level_state_t> _streams;
-  std::vector<FILE *>            _files;
 };
 
 log_state_list_t &get_log_states();
@@ -140,7 +145,7 @@ log_state_list_t &get_log_states();
     fprintf(stream, "[%6.2fs] ", diff.count());                                \
   } while (0)
 
-#define LOG(level, fmt, ...)                                                   \
+#define PRINT_LOG(level, ...)                                                  \
   do {                                                                         \
     for (auto &s : logger::get_log_states()) {                                 \
       if (s.print_ok(level)) {                                                 \
@@ -154,38 +159,25 @@ log_state_list_t &get_log_states();
           fprintf(s.get_stream(),                                              \
                   ANSI_COLOR_YELLOW "[WARN] " ANSI_COLOR_RESET);               \
         }                                                                      \
-        fprintf(s.get_stream(), fmt "\n", __VA_ARGS__);                        \
+        fprintf(s.get_stream(), "%s\n", std::format(__VA_ARGS__).c_str());     \
       }                                                                        \
     }                                                                          \
   } while (0)
 
-#define LOG_DEBUG(fmt, ...) LOG(logger::log_level::debug, fmt, __VA_ARGS__);
+#define LOG(level, ...) PRINT_LOG(level, __VA_ARGS__);
 
-#define LOG_INFO(fmt, ...) LOG(logger::log_level::info, fmt, __VA_ARGS__);
+#define LOG_DEBUG(...) PRINT_LOG(logger::log_level::debug, __VA_ARGS__);
 
-#define LOG_PROGRESS(fmt, ...)                                                 \
-  LOG(logger::log_level::progress, fmt, __VA_ARGS__);
+#define LOG_INFO(...) PRINT_LOG(logger::log_level::info, __VA_ARGS__);
 
-#define LOG_IMPORTANT(fmt, ...)                                                \
-  LOG(logger::log_level::important, fmt, __VA_ARGS__);
+#define LOG_PROGRESS(...) PRINT_LOG(logger::log_level::progress, __VA_ARGS__);
 
-#define LOG_WARNING(fmt, ...) LOG(logger::log_level::warning, fmt, __VA_ARGS__);
+#define LOG_IMPORTANT(...) PRINT_LOG(logger::log_level::important, __VA_ARGS__);
 
-#define LOG_ERROR(fmt, ...) LOG(logger::log_level::error, fmt, __VA_ARGS__);
+#define LOG_WARNING(...) PRINT_LOG(logger::log_level::warning, __VA_ARGS__);
 
-#define MESSAGE(level, str) LOG(level, "%s", (str));
+#define LOG_ERROR(...) PRINT_LOG(logger::log_level::error, __VA_ARGS__);
 
-#define MESSAGE_DEBUG(str) LOG(logger::log_level::debug, "%s", (str));
-
-#define MESSAGE_INFO(str) LOG(logger::log_level::info, "%s", (str));
-
-#define MESSAGE_PROGRESS(str) LOG(logger::log_level::progress, "%s", (str));
-
-#define MESSAGE_IMPORTANT(str) LOG(logger::log_level::important, "%s", (str));
-
-#define MESSAGE_WARNING(str) LOG(logger::log_level::warning, "%s", (str));
-
-#define MESSAGE_ERROR(str) LOG(logger::log_level::error, "%s", (str));
 } // namespace logger
 
 #endif

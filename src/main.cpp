@@ -1,4 +1,4 @@
-#include <iostream>
+#include <format>
 #include <logger.hpp>
 
 int main() {
@@ -11,10 +11,14 @@ int main() {
                                                | logger::log_level::debug);
   logger::get_log_states().add_level_to_all_streams(
       logger::log_level::important);
-  MESSAGE_IMPORTANT("info test");
-  MESSAGE_DEBUG("debug test");
-  MESSAGE_ERROR("error test");
-  MESSAGE_WARNING("warning test");
-  MESSAGE(logger::log_level::error, "test");
-  MESSAGE(WARNING, "test");
+  LOG_IMPORTANT("info test");
+  LOG_DEBUG("debug test");
+  LOG_ERROR("error test");
+  LOG_WARNING("warning test");
+  LOG(logger::log_level::error, "test");
+  LOG(INFO, "test");
+  LOG(INFO, "{}", "hello world");
+  int bar = 1231;
+  LOG(INFO, "{}: {}", "bar", bar);
+  LOG_IMPORTANT("{}: {}", "bar", bar);
 }
