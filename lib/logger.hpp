@@ -5,6 +5,7 @@
 #include <chrono>
 #include <filesystem>
 #include <format>
+#include <mutex>
 #include <stdio.h>
 #include <vector>
 
@@ -15,6 +16,8 @@ const logger_time_point CLOCK_START = std::chrono::high_resolution_clock::now();
 
 constexpr size_t                     LOG_LEVEL_COUNT = 6;
 typedef std::bitset<LOG_LEVEL_COUNT> log_level_set;
+
+static std::mutex print_mutex;
 
 class log_level {
 public:
@@ -147,6 +150,7 @@ log_state_list_t &get_log_states();
 
 #define PRINT_LOG(level, ...)                                                  \
   do {                                                                         \
+    const std::scoped_lock<std::mutex> print_lock{logger::print_mutex};        \
     for (auto &s : logger::get_log_states()) {                                 \
       if (s.print_ok(level)) {                                                 \
         print_clock(s.get_stream());                                           \
