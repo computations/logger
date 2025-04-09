@@ -1,4 +1,4 @@
-add_library(logger SHARED
+add_library(logger STATIC
     logger.cpp
 )
 
