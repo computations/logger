@@ -20,5 +20,8 @@ int main() {
   LOG(INFO, "{}", "hello world");
   int bar = 1231;
   LOG(INFO, "{}: {}", "bar", bar);
+  LOG_INFO(COLORIZE(ANSI_COLOR_BLUE "test {}"), bar);
   LOG_IMPORTANT("{}: {}", "bar", bar);
+
+  MESSAGE(logger::log_level::error, "test");
 }

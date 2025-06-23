@@ -19,6 +19,16 @@ typedef std::bitset<LOG_LEVEL_COUNT> log_level_set;
 
 static std::mutex print_mutex;
 
+#define ANSI_COLOR_RED     "\x1b[31m"
+#define ANSI_COLOR_GREEN   "\x1b[32m"
+#define ANSI_COLOR_YELLOW  "\x1b[33m"
+#define ANSI_COLOR_BLUE    "\x1b[34m"
+#define ANSI_COLOR_MAGENTA "\x1b[35m"
+#define ANSI_COLOR_CYAN    "\x1b[36m"
+#define ANSI_COLOR_RESET   "\x1b[0m"
+
+enum class print_clock { full, none };
+
 class log_level {
 public:
   enum log_level_value {
@@ -133,14 +143,6 @@ private:
 
 log_state_list_t &get_log_states();
 
-#define ANSI_COLOR_RED     "\x1b[31m"
-#define ANSI_COLOR_GREEN   "\x1b[32m"
-#define ANSI_COLOR_YELLOW  "\x1b[33m"
-#define ANSI_COLOR_BLUE    "\x1b[34m"
-#define ANSI_COLOR_MAGENTA "\x1b[35m"
-#define ANSI_COLOR_CYAN    "\x1b[36m"
-#define ANSI_COLOR_RESET   "\x1b[0m"
-
 #define print_clock(stream)                                                    \
   do {                                                                         \
     std::chrono::duration<double> diff                                         \
@@ -148,39 +150,58 @@ log_state_list_t &get_log_states();
     fprintf(stream, "[%6.2fs] ", diff.count());                                \
   } while (0)
 
-#define PRINT_LOG(level, ...)                                                  \
+#define COLORIZE(COLOR, ...) (COLOR __VA_ARGS__ ANSI_COLOR_RESET)
+
+#define PRINT_LOG(level, clock, ...)                                           \
   do {                                                                         \
     const std::scoped_lock<std::mutex> print_lock{logger::print_mutex};        \
     for (auto &s : logger::get_log_states()) {                                 \
       if (s.print_ok(level)) {                                                 \
-        print_clock(s.get_stream());                                           \
+        if (clock == logger::print_clock::full) {                              \
+          print_clock(s.get_stream());                                         \
+        }                                                                      \
         if (s && logger::log_level::debug) {                                   \
           fprintf(s.get_stream(), "[%s:%d] ", __func__, __LINE__);             \
         }                                                                      \
         if (level == logger::log_level::error) {                               \
-          fprintf(s.get_stream(), ANSI_COLOR_RED "[ERR] " ANSI_COLOR_RESET);   \
+          fprintf(s.get_stream(), COLORIZE(ANSI_COLOR_RED, "[ERR] "));         \
         } else if (level == logger::log_level::warning) {                      \
-          fprintf(s.get_stream(),                                              \
-                  ANSI_COLOR_YELLOW "[WARN] " ANSI_COLOR_RESET);               \
+          fprintf(s.get_stream(), COLORIZE(ANSI_COLOR_YELLOW "[WARN] "));      \
         }                                                                      \
         fprintf(s.get_stream(), "%s\n", std::format(__VA_ARGS__).c_str());     \
       }                                                                        \
     }                                                                          \
   } while (0)
 
-#define LOG(level, ...) PRINT_LOG(level, __VA_ARGS__);
+#define LOG(level, ...)                                                        \
+  PRINT_LOG(level, logger::print_clock::full, __VA_ARGS__);
 
-#define LOG_DEBUG(...) PRINT_LOG(logger::log_level::debug, __VA_ARGS__);
+#define LOG_DEBUG(...)     LOG(logger::log_level::debug, __VA_ARGS__);
+#define LOG_INFO(...)      LOG(logger::log_level::info, __VA_ARGS__);
+#define LOG_PROGRESS(...)  LOG(logger::log_level::progress, __VA_ARGS__);
+#define LOG_IMPORTANT(...) LOG(logger::log_level::important, __VA_ARGS__);
+#define LOG_WARNING(...)   LOG(logger::log_level::warning, __VA_ARGS__);
+#define LOG_ERROR(...)     LOG(logger::log_level::error, __VA_ARGS__);
 
-#define LOG_INFO(...) PRINT_LOG(logger::log_level::info, __VA_ARGS__);
+#define MESSAGE(level, ...)                                                    \
+  PRINT_LOG(level, logger::print_clock::none, __VA_ARGS__);
 
-#define LOG_PROGRESS(...) PRINT_LOG(logger::log_level::progress, __VA_ARGS__);
+#define MESSAGE_DEBUG(...)    MESSAGE(logger::log_level::debug, __VA_ARGS__);
+#define MESSAGE_INFO(...)     MESSAGE(logger::log_level::info, __VA_ARGS__);
+#define MESSAGE_PROGRESS(...) MESSAGE(logger::log_level::progress, __VA_ARGS__);
+#define MESSAGE_IMPORTANT(...)                                                 \
+  MESSAGE(logger::log_level::important, __VA_ARGS__);
+#define MESSAGE_WARNING(...) MESSAGE(logger::log_level::warning, __VA_ARGS__);
+#define MESSAGE_ERROR(...)   MESSAGE(logger::log_level::error, __VA_ARGS__);
 
-#define LOG_IMPORTANT(...) PRINT_LOG(logger::log_level::important, __VA_ARGS__);
-
-#define LOG_WARNING(...) PRINT_LOG(logger::log_level::warning, __VA_ARGS__);
-
-#define LOG_ERROR(...) PRINT_LOG(logger::log_level::error, __VA_ARGS__);
+template <typename... Ts>
+inline void
+LOG_ASSERT(bool condition, std::basic_format_string<char> msg, Ts... args) {
+  if (!condition) {
+    MESSAGE_ERROR(msg, args...);
+    abort();
+  }
+}
 
 } // namespace logger
 
