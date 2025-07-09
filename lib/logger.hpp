@@ -194,14 +194,13 @@ log_state_list_t &get_log_states();
 #define MESSAGE_WARNING(...) MESSAGE(logger::log_level::warning, __VA_ARGS__);
 #define MESSAGE_ERROR(...)   MESSAGE(logger::log_level::error, __VA_ARGS__);
 
-template <typename... Ts>
-inline void
-LOG_ASSERT(bool condition, std::basic_format_string<char> msg, Ts... args) {
-  if (!condition) {
-    MESSAGE_ERROR(msg, args...);
-    abort();
-  }
-}
+#define LOG_ASSERT(condition, msg, ...)                                        \
+  do {                                                                         \
+    if (!condition) {                                                          \
+      LOG_ERROR(msg, __VA_ARGS__);                                             \
+      abort();                                                                 \
+    }                                                                          \
+  } while (0)
 
 } // namespace logger
 
