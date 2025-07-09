@@ -197,6 +197,17 @@ log_state_list_t &get_log_states();
 #define MESSAGE_WARNING(...) MESSAGE(logger::log_level::warning, __VA_ARGS__);
 #define MESSAGE_ERROR(...)   MESSAGE(logger::log_level::error, __VA_ARGS__);
 
+#ifdef LOGGER_ASSERT_THROW
+#include <stdexcept>
+#define LOG_ASSERT(condition, ...)                                             \
+  do {                                                                         \
+    if (!(condition)) {                                                        \
+      MESSAGE_ERROR("ASSERT(" #condition ") " __VA_ARGS__);                    \
+      throw std::runtime_error{"Assertion failed"};                            \
+    }                                                                          \
+  } while (0)
+
+#else
 #define LOG_ASSERT(condition, ...)                                             \
   do {                                                                         \
     if (!(condition)) {                                                        \
@@ -204,7 +215,7 @@ log_state_list_t &get_log_states();
       abort();                                                                 \
     }                                                                          \
   } while (0)
-
+#endif
 } // namespace logger
 
 #endif
