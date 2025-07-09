@@ -18,10 +18,12 @@ int main() {
   LOG(logger::log_level::error, "test");
   LOG(INFO, "test");
   LOG(INFO, "{}", "hello world");
-  int bar = 1231;
+  int bar = 1'231;
   LOG(INFO, "{}: {}", "bar", bar);
   LOG_INFO(COLORIZE(ANSI_COLOR_BLUE "test {}"), bar);
   LOG_IMPORTANT("{}: {}", "bar", bar);
+
+  LOG_ASSERT(false, COLORIZE(ANSI_COLOR_LAVENDER, "test {}"), "asdf");
 
   MESSAGE(logger::log_level::error, "test");
 }
