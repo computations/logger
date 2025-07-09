@@ -27,6 +27,7 @@ static std::mutex print_mutex;
 #define ANSI_COLOR_CYAN     "\x1b[36m"
 #define ANSI_COLOR_DARK_RED "\x1b[38;5;88m"
 #define ANSI_COLOR_LAVENDER "\x1b[38;5;219m"
+#define ANSI_EFFECT_BLINK   "\x1b[5m"
 #define ANSI_COLOR_RESET    "\x1b[0m"
 
 enum class print_clock { full, none };
@@ -196,10 +197,10 @@ log_state_list_t &get_log_states();
 #define MESSAGE_WARNING(...) MESSAGE(logger::log_level::warning, __VA_ARGS__);
 #define MESSAGE_ERROR(...)   MESSAGE(logger::log_level::error, __VA_ARGS__);
 
-#define LOG_ASSERT(condition, msg, ...)                                        \
+#define LOG_ASSERT(condition, ...)                                             \
   do {                                                                         \
-    if (!(condition)) {                                                          \
-      LOG_ERROR(msg, __VA_ARGS__);                                             \
+    if (!(condition)) {                                                        \
+      MESSAGE_ERROR("ASSERT(" #condition ") " __VA_ARGS__);                    \
       abort();                                                                 \
     }                                                                          \
   } while (0)
