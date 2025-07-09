@@ -198,7 +198,7 @@ log_state_list_t &get_log_states();
 
 #define LOG_ASSERT(condition, msg, ...)                                        \
   do {                                                                         \
-    if (!condition) {                                                          \
+    if (!(condition)) {                                                          \
       LOG_ERROR(msg, __VA_ARGS__);                                             \
       abort();                                                                 \
     }                                                                          \
