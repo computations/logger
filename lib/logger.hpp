@@ -8,6 +8,39 @@
 #include <mutex>
 #include <stdio.h>
 #include <vector>
+#include <version>
+
+#ifndef __cpp_lib_format_ranges
+template <typename T> struct std::formatter<std::vector<T>> {
+  template <class ParseContext>
+  constexpr ParseContext::iterator parse(ParseContext &ctx) {
+    auto it = ctx.begin();
+    if (it == ctx.end()) { return it; }
+    ++it;
+
+    if (it != ctx.end() && *it != '}') {
+      throw std::format_error("Invalid format args");
+    }
+    return it;
+  }
+
+  template <class FmtContext>
+  FmtContext::iterator format(std::vector<T> vec, FmtContext &ctx) const {
+    auto out = ctx.out();
+    *(out++)  = '[';
+    for (size_t idx = 0; idx < vec.size(); ++idx) {
+      auto &ele = vec[idx];
+      out       = std::format_to(out, "{}", ele);
+      if (idx != vec.size() - 1) {
+        *(out++) = ',';
+        *(out++) = ' ';
+      }
+    }
+    *(out++) = ']';
+    return out;
+  }
+};
+#endif
 
 namespace logger {
 

@@ -24,6 +24,10 @@ int main() {
   LOG_INFO(COLORIZE(ANSI_COLOR_BLUE "test {}"), bar);
   LOG_IMPORTANT("{}: {}", "bar", bar);
 
+  std::vector<double> test_vec = {1.2, 3.4};
+
+  LOG_INFO("{}", test_vec);
+
   LOG_INFO(COLORIZE(ANSI_EFFECT_BLINK, "test {}"), "asdf");
   LOG_ASSERT(false == true, "test");
   LOG_ASSERT(true == false, "test {}", "asdf");
