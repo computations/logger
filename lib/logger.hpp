@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <format>
 #include <mutex>
+#include <stacktrace>
 #include <stdio.h>
 #include <vector>
 #include <version>
@@ -27,7 +28,7 @@ template <typename T> struct std::formatter<std::vector<T>> {
   template <class FmtContext>
   FmtContext::iterator format(std::vector<T> vec, FmtContext &ctx) const {
     auto out = ctx.out();
-    *(out++)  = '[';
+    *(out++) = '[';
     for (size_t idx = 0; idx < vec.size(); ++idx) {
       auto &ele = vec[idx];
       out       = std::format_to(out, "{}", ele);
@@ -47,7 +48,7 @@ namespace logger {
 typedef std::chrono::high_resolution_clock::time_point logger_time_point;
 const logger_time_point CLOCK_START = std::chrono::high_resolution_clock::now();
 
-constexpr size_t                     LOG_LEVEL_COUNT = 6;
+constexpr size_t                     LOG_LEVEL_COUNT = 7;
 typedef std::bitset<LOG_LEVEL_COUNT> log_level_set;
 
 static std::mutex print_mutex;
@@ -67,44 +68,59 @@ enum class print_clock { full, none };
 
 class log_level {
 public:
-  enum log_level_value {
-    debug     = 1ul << 0,
-    info      = 1ul << 1,
-    progress  = 1ul << 2,
-    important = 1ul << 3,
-    warning   = 1ul << 4,
-    error     = 1ul << 5
-  };
+  constexpr operator log_level_set() const {
+    return std::bitset<LOG_LEVEL_COUNT>(_ll);
+  }
 
-  operator log_level_set() const { return std::bitset<LOG_LEVEL_COUNT>(_ll); }
+  constexpr operator uint16_t() const { return _ll; }
 
-  log_level(log_level_value ll) : _ll{ll} {}
+  constexpr log_level() = default;
+  constexpr log_level(uint16_t ll) : _ll{ll} {}
 
-  log_level_set operator|(log_level_set l2) const {
+  constexpr log_level_set operator|(log_level l2) const {
     return l2 | log_level_set(_ll);
   }
 
-  log_level_set operator&(log_level_set l2) const {
+  constexpr log_level_set operator&(log_level l2) const {
+    return l2 & log_level_set(_ll);
+  }
+
+  constexpr log_level_set operator|(log_level_set l2) const {
+    return l2 | log_level_set(_ll);
+  }
+
+  constexpr log_level_set operator&(log_level_set l2) const {
     return l2 & log_level_set(_ll);
   }
 
 private:
   constexpr static log_level_set
-  convert_log_level_value_to_bitset(log_level_value ll) {
+  convert_log_level_value_to_bitset(uint16_t ll) {
     return 1lu << static_cast<size_t>(ll);
   }
 
-  log_level_value _ll;
+  uint16_t _ll;
 };
 
-#define DEBUG     logger::log_level::debug
-#define INFO      logger::log_level::info
-#define PROGRESS  logger::log_level::progress
-#define IMPORTANT logger::log_level::important
-#define WARNING   logger::log_level::warning
-#define ERROR     logger::log_level::error
+constexpr log_level_set operator|(log_level_set ls, log_level ll) {
+  return ll | ls;
+}
 
-static_assert((1ul << (LOG_LEVEL_COUNT - 1)) == log_level::error,
+constexpr log_level_set operator&(log_level_set ls, log_level ll) {
+  return ll & ls;
+}
+
+constexpr log_level debug{1ul << 0};
+constexpr log_level info{1ul << 1};
+constexpr log_level progress{1ul << 2};
+constexpr log_level important{1ul << 3};
+constexpr log_level warning{1ul << 4};
+constexpr log_level error{1ul << 5};
+constexpr log_level stacktrace{1ul << 6};
+
+constexpr log_level_set defaults = stacktrace | error | warning | important;
+
+static_assert((1ul << (LOG_LEVEL_COUNT - 1)) == stacktrace,
               "Log level const doesn't match the actual log levels");
 
 class log_level_state_t {
@@ -133,6 +149,10 @@ public:
   FILE *get_stream() const { return _stream; }
 
   bool operator&&(const log_level_set &ll) const {
+    return (_log_levels & ll).any();
+  }
+
+  bool operator&&(const log_level &ll) const {
     return (_log_levels & ll).any();
   }
 
@@ -178,6 +198,7 @@ private:
 };
 
 log_state_list_t &get_log_states();
+} // namespace logger
 
 #define print_clock(stream)                                                    \
   do {                                                                         \
@@ -196,12 +217,14 @@ log_state_list_t &get_log_states();
         if (clock == logger::print_clock::full) {                              \
           print_clock(s.get_stream());                                         \
         }                                                                      \
-        if (s && logger::log_level::debug) {                                   \
+        if (s && logger::debug) {                                              \
           fprintf(s.get_stream(), "[%s:%d] ", __func__, __LINE__);             \
         }                                                                      \
-        if (level == logger::log_level::error) {                               \
+        if (level == logger::stacktrace) {                                     \
+          fprintf(s.get_stream(), COLORIZE(ANSI_COLOR_RED, "[STACKTRACE] "));  \
+        } else if (level == logger::error) {                                   \
           fprintf(s.get_stream(), COLORIZE(ANSI_COLOR_RED, "[ERR] "));         \
-        } else if (level == logger::log_level::warning) {                      \
+        } else if (level == logger::warning) {                                 \
           fprintf(s.get_stream(), COLORIZE(ANSI_COLOR_YELLOW "[WARN] "));      \
         }                                                                      \
         fprintf(s.get_stream(), "%s\n", std::format(__VA_ARGS__).c_str());     \
@@ -212,23 +235,23 @@ log_state_list_t &get_log_states();
 #define LOG(level, ...)                                                        \
   PRINT_LOG(level, logger::print_clock::full, __VA_ARGS__);
 
-#define LOG_DEBUG(...)     LOG(logger::log_level::debug, __VA_ARGS__);
-#define LOG_INFO(...)      LOG(logger::log_level::info, __VA_ARGS__);
-#define LOG_PROGRESS(...)  LOG(logger::log_level::progress, __VA_ARGS__);
-#define LOG_IMPORTANT(...) LOG(logger::log_level::important, __VA_ARGS__);
-#define LOG_WARNING(...)   LOG(logger::log_level::warning, __VA_ARGS__);
-#define LOG_ERROR(...)     LOG(logger::log_level::error, __VA_ARGS__);
+#define LOG_DEBUG(...)     LOG(logger::debug, __VA_ARGS__);
+#define LOG_INFO(...)      LOG(logger::info, __VA_ARGS__);
+#define LOG_PROGRESS(...)  LOG(logger::progress, __VA_ARGS__);
+#define LOG_IMPORTANT(...) LOG(logger::important, __VA_ARGS__);
+#define LOG_WARNING(...)   LOG(logger::warning, __VA_ARGS__);
+#define LOG_ERROR(...)     LOG(logger::error, __VA_ARGS__);
 
 #define MESSAGE(level, ...)                                                    \
   PRINT_LOG(level, logger::print_clock::none, __VA_ARGS__);
 
-#define MESSAGE_DEBUG(...)    MESSAGE(logger::log_level::debug, __VA_ARGS__);
-#define MESSAGE_INFO(...)     MESSAGE(logger::log_level::info, __VA_ARGS__);
-#define MESSAGE_PROGRESS(...) MESSAGE(logger::log_level::progress, __VA_ARGS__);
+#define MESSAGE_DEBUG(...)    MESSAGE(logger::debug, __VA_ARGS__);
+#define MESSAGE_INFO(...)     MESSAGE(logger::info, __VA_ARGS__);
+#define MESSAGE_PROGRESS(...) MESSAGE(logger::progress, __VA_ARGS__);
 #define MESSAGE_IMPORTANT(...)                                                 \
-  MESSAGE(logger::log_level::important, __VA_ARGS__);
-#define MESSAGE_WARNING(...) MESSAGE(logger::log_level::warning, __VA_ARGS__);
-#define MESSAGE_ERROR(...)   MESSAGE(logger::log_level::error, __VA_ARGS__);
+  MESSAGE(logger::important, __VA_ARGS__);
+#define MESSAGE_WARNING(...) MESSAGE(logger::warning, __VA_ARGS__);
+#define MESSAGE_ERROR(...)   MESSAGE(logger::error, __VA_ARGS__);
 
 #ifdef LOGGER_ASSERT_THROW
 #include <stdexcept>
@@ -239,7 +262,17 @@ log_state_list_t &get_log_states();
       throw std::runtime_error{"Assertion failed"};                            \
     }                                                                          \
   } while (0)
-
+#elif __cpp_lib_stacktrace
+#define LOG_ASSERT(condition, ...)                                             \
+  do {                                                                         \
+    if (!(condition)) {                                                        \
+      MESSAGE_ERROR("ASSERT(" #condition ") " __VA_ARGS__);                    \
+      for (auto &se : std::stacktrace::current()) {                            \
+        MESSAGE(logger::stacktrace, "{}", se);                                 \
+      }                                                                        \
+      abort();                                                                 \
+    }                                                                          \
+  } while (0)
 #else
 #define LOG_ASSERT(condition, ...)                                             \
   do {                                                                         \
@@ -249,6 +282,5 @@ log_state_list_t &get_log_states();
     }                                                                          \
   } while (0)
 #endif
-} // namespace logger
 
 #endif

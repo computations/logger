@@ -3,8 +3,8 @@ add_library(logger STATIC
 )
 
 target_compile_options(logger PRIVATE -Wall -Wextra)
+target_link_libraries(logger PRIVATE stdc++exp)
 
 target_include_directories(logger PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 
 set_target_properties(logger PROPERTIES LINKER_LANGUAGE CXX)
-
