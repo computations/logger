@@ -3,7 +3,9 @@ add_library(logger STATIC
 )
 
 target_compile_options(logger PRIVATE -Wall -Wextra)
-target_link_libraries(logger PRIVATE stdc++exp)
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  target_link_libraries(logger PRIVATE stdc++exp)
+endif()
 
 target_include_directories(logger PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 

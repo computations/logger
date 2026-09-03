@@ -268,7 +268,7 @@ log_state_list_t &get_log_states();
     if (!(condition)) {                                                        \
       MESSAGE_ERROR("ASSERT(" #condition ") " __VA_ARGS__);                    \
       for (auto &se : std::stacktrace::current()) {                            \
-        MESSAGE(logger::stacktrace, "{}", se);                                 \
+        MESSAGE(logger::stacktrace, "{}", se.description());                   \
       }                                                                        \
       abort();                                                                 \
     }                                                                          \
